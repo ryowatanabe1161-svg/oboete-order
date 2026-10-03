@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f3d2b">
+<title>おぼえてオーダー！ ふーさんの森カフェ</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🐻%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --forest:#1f3d2b;--forest2:#2e5a3c;--leaf:#7cc6a4;--wood:#8b5a2b;--wood-d:#5c3a1a;--cream:#fff6e5;--paper:#fffaf0;
+  --ink:#4a2f1a;--orange:#f29e4c;--orange-d:#c9762a;--berry:#d9534f;--sky:#5aa9d6;--gold:#ffd66b;
+  --panel:rgba(255,246,229,.10);--panel-b:rgba(255,236,200,.28);
+  --font:"Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP","Noto Sans CJK JP","Yu Gothic UI","Yu Gothic",Meiryo,system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font-family:var(--font);color:var(--cream);overflow:hidden;
+  background:
+    radial-gradient(circle at 20% 30%,rgba(124,198,164,.16) 0 3px,transparent 4px) 0 0/54px 54px,
+    radial-gradient(circle at 70% 70%,rgba(255,214,107,.10) 0 2px,transparent 3px) 0 0/38px 38px,
+    radial-gradient(ellipse at 50% -10%,#3f7a52 0%,#2a5038 45%,#15291d 100%);background-attachment:fixed}
+button{font-family:inherit;cursor:pointer;border:none}
+button:disabled{cursor:default;opacity:.45}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center}
+.screen.active{display:flex}
+.col{width:100%;max-width:640px;height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom)}
+.scroll{overflow-y:auto;padding-bottom:22px}
+body.is-host .guestonly{display:none!important}
+body:not(.is-host) .hostonly{display:none!important}
+
+/* ---- logo ---- */
+.logo-wrap{text-align:center;margin:16px 0 6px}
+.logo-bear{font-size:54px;line-height:1;filter:drop-shadow(0 4px 0 rgba(0,0,0,.25));animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-5px) rotate(-4deg)}}
+.logo-wrap h1{margin:4px 0 0;font-size:clamp(30px,10vw,44px);color:var(--gold);letter-spacing:1px;text-shadow:0 3px 0 var(--wood-d),0 0 16px rgba(255,214,107,.45);white-space:nowrap}
+.logo-wrap .sub{display:inline-block;margin-top:4px;background:var(--wood);color:var(--cream);font-weight:900;padding:3px 14px;border-radius:999px;font-size:14px;box-shadow:0 2px 0 var(--wood-d)}
+.logo-wrap p{margin:8px 0 0;font-size:12.5px;opacity:.85}
+.mini-logo{font-weight:900;color:var(--gold);font-size:15px;white-space:nowrap}
+
+/* ---- panels / buttons ---- */
+.box{background:var(--panel);border:1px solid var(--panel-b);border-radius:16px;padding:12px;margin:9px 0}
+.box h2{margin:0 0 8px;font-size:15px;color:var(--gold)}
+.hint{font-size:12px;opacity:.85;margin-top:6px;line-height:1.5}
+input.txt{width:100%;font-family:inherit;font-size:18px;padding:12px;border-radius:12px;border:2px solid transparent;background:var(--cream);color:var(--ink)}
+input.txt:focus{outline:none;border-color:var(--orange)}
+.codein{text-transform:uppercase;letter-spacing:6px;text-align:center;font-weight:900;font-size:24px!important}
+.mainbtn{display:block;width:100%;padding:15px;border-radius:16px;font-size:20px;font-weight:900;color:#fff;
+  background:linear-gradient(180deg,#ffb76b,var(--orange) 55%,var(--orange-d));box-shadow:0 5px 0 #8a4f16,0 8px 18px rgba(0,0,0,.3);margin-top:8px;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.mainbtn:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 #8a4f16}
+.subbtn{display:block;width:100%;padding:12px;border-radius:14px;font-size:15px;font-weight:800;color:var(--cream);background:rgba(0,0,0,.25);border:2px solid var(--panel-b);margin-top:9px}
+.seg{display:flex;gap:5px;flex-wrap:wrap}
+.seg button{flex:1;min-width:40px;padding:9px 4px;border-radius:10px;font-size:15px;font-weight:800;background:rgba(0,0,0,.25);color:var(--cream);border:2px solid transparent}
+.seg button.on{background:var(--gold);color:var(--wood-d);border-color:#fff3c4;opacity:1}
+.seg.ro button{cursor:default}
+.opt{margin-top:10px}.opt:first-child{margin-top:0}
+.opt .lab{font-size:13px;font-weight:800;margin-bottom:5px;opacity:.95}
+.row2{display:flex;gap:8px;margin-top:8px}.row2 .subbtn{margin-top:0;flex:1;padding:10px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:800;font-size:14px}
+.switch{width:54px;height:30px;border-radius:999px;background:rgba(0,0,0,.35);position:relative;flex:none;border:2px solid var(--panel-b)}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#ddd;transition:left .2s}
+.switch.on{background:var(--leaf)}.switch.on::after{left:26px;background:#fff}
+
+/* ---- order ticket ---- */
+.ticket{position:relative;background:var(--paper);color:var(--ink);border-radius:10px;border:2px dashed #c79a63;box-shadow:0 3px 8px rgba(0,0,0,.3);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+.ticket::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:var(--cc,#c79a63)}
+.ticket.c-drink{--cc:#5aa9d6}.ticket.c-sweets{--cc:#e97aa6}.ticket.c-meal{--cc:#f29e4c}.ticket.c-bread{--cc:#b98a4e}
+.ticket .em{line-height:1}
+.ticket .nm{font-weight:900;line-height:1.2;word-break:keep-all;overflow-wrap:anywhere}
+.tg{display:inline-block;font-size:10px;font-weight:900;padding:1px 6px;border-radius:999px;color:#fff;margin-top:2px}
+.tg.hot{background:#e0553f}.tg.ice{background:#3d8fd1}
+.ticket.big{width:min(78vw,300px);aspect-ratio:4/5;padding:16px}
+.ticket.big .em{font-size:96px}.ticket.big .nm{font-size:30px;margin-top:12px}.ticket.big .tg{font-size:15px;padding:3px 12px;margin-top:8px}
+.ticket.sm{width:100%;min-height:74px;padding:8px 4px 6px}
+.ticket.sm .em{font-size:26px}.ticket.sm .nm{font-size:12.5px;margin-top:3px}
+.ticket.md{width:150px;padding:14px 8px}.ticket.md .em{font-size:48px}.ticket.md .nm{font-size:18px;margin-top:6px}
+.popin{animation:popin .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes popin{0%{transform:scale(.6) rotate(-6deg);opacity:0}100%{transform:none;opacity:1}}
+
+/* ---- lobby ---- */
+.codebig{text-align:center;font-size:13px}
+.codebig b{display:block;font-size:42px;letter-spacing:10px;color:var(--gold);font-weight:900;text-shadow:0 3px 0 var(--wood-d);line-height:1.1}
+#qr{background:#fff;border-radius:12px;padding:8px;width:160px;height:160px;margin:8px auto 6px}
+#qr svg{width:100%;height:100%;display:block}
+.url{font-size:11.5px;word-break:break-all;background:rgba(0,0,0,.25);padding:6px 8px;border-radius:8px;text-align:center}
+.seat{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:rgba(0,0,0,.22);margin-bottom:6px;min-height:46px}
+.seat .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--gold);color:var(--wood-d);font-weight:900;flex:none}
+.seat .nm{flex:1;min-width:0;font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat.offline{opacity:.55}
+.tag{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:6px;white-space:nowrap;flex:none}
+.tag.host{background:var(--gold);color:var(--wood-d)}.tag.you{background:var(--cream);color:var(--wood-d)}
+.tag.off{background:#555;color:#fff}.tag.on{background:#3a9a68;color:#fff}.tag.out{background:var(--berry);color:#fff}.tag.zero{background:var(--leaf);color:#123}
+.xbtn{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.15);color:var(--cream);font-size:16px;font-weight:900;flex:none}
+.waitmsg{text-align:center;font-weight:800;padding:14px;border-radius:14px;background:rgba(0,0,0,.25);margin-top:8px}
+.dots::after{content:"";animation:dots 1.2s steps(4) infinite}
+@keyframes dots{0%{content:""}25%{content:"・"}50%{content:"・・"}75%{content:"・・・"}}
+
+/* ---- memorize ---- */
+#memo .col{align-items:center;justify-content:center;gap:12px}
+.memo-head{font-weight:900;font-size:18px;color:var(--gold);text-align:center}
+.memo-head small{display:block;font-size:12.5px;color:var(--cream);opacity:.85;font-weight:700;margin-top:2px}
+.progress{width:min(80vw,320px);height:12px;border-radius:999px;background:rgba(0,0,0,.3);overflow:hidden;border:1px solid var(--panel-b)}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--leaf),var(--gold));transition:width .3s}
+.memo-count{font-size:22px;font-weight:900}.memo-count b{color:var(--gold);font-size:30px}
+.memo-ready{font-size:22px;font-weight:900;text-align:center;line-height:1.6}
+.memo-ready .big{font-size:64px;display:block}
+
+/* ---- play ---- */
+.topbar{display:flex;align-items:center;gap:6px;padding:8px 0 6px;flex:none}
+.chipx{font-size:12px;background:rgba(0,0,0,.28);padding:4px 9px;border-radius:999px;white-space:nowrap}
+.chipx b{color:var(--gold)}
+.iconbtn{padding:6px 10px;border-radius:999px;font-size:13px;font-weight:800;background:rgba(255,246,229,.16);color:var(--cream);border:1px solid var(--panel-b);white-space:nowrap}
+.spacer{flex:1}
+.strip{display:flex;gap:6px;flex:none;margin-bottom:6px}
+.strip .pill{flex:1;text-align:center;background:rgba(0,0,0,.28);border:1px solid var(--panel-b);border-radius:12px;padding:5px 4px;font-size:12px;font-weight:700}
+.strip .pill b{font-size:18px;color:var(--gold)}
+.strip .pill.goal{background:rgba(124,198,164,.22);border-color:var(--leaf)}
+#players{flex:none;display:flex;flex-direction:column;gap:5px;max-height:34vh;overflow-y:auto}
+.prow{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;background:rgba(0,0,0,.22);border:2px solid transparent;min-height:44px}
+.prow.cur{background:rgba(255,214,107,.18);border-color:var(--gold)}
+.prow.out{opacity:.55}
+.prow .nm{font-weight:800;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:7.5em}
+.prow.cur .nm::before{content:"▶ ";color:var(--gold)}
+.prow .tags{display:flex;gap:3px;flex-wrap:wrap}
+.backs{display:flex;align-items:center;margin-left:auto;gap:4px;font-weight:900}
+.backs .cb{width:14px;height:19px;border-radius:3px;background:repeating-linear-gradient(45deg,var(--wood) 0 4px,#a06a35 4px 8px);border:1.5px solid var(--cream);margin-left:-7px;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.backs .cb:first-child{margin-left:0}
+.backs .num{min-width:1.6em;text-align:right;font-size:15px}
+.helpico{font-size:11px;font-weight:900;padding:1px 6px;border-radius:6px;background:#e9d27a;color:var(--wood-d)}
+.helpico.used{background:#555;color:#aaa;text-decoration:line-through}
+#log{flex:none;font-size:12.5px;line-height:1.55;padding:5px 10px;border-radius:10px;background:rgba(0,0,0,.25);margin:6px 0;height:66px;overflow:hidden}
+#log div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.65}
+#log div:first-child{opacity:1;font-weight:700}
+.handwrap{flex:1 1 auto;min-height:0;overflow-y:auto;background:rgba(0,0,0,.18);border-radius:14px;padding:8px;border:1px solid var(--panel-b)}
+.handwrap h3{margin:0 0 6px;font-size:13px;color:var(--gold);display:flex;justify-content:space-between}
+.hand{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
+.peeknote{margin-top:8px;font-size:12.5px;background:rgba(255,214,107,.16);border:1px dashed var(--gold);border-radius:10px;padding:6px 8px}
+.peeknote b{color:var(--gold);letter-spacing:2px}
+#action{flex:none;background:linear-gradient(180deg,rgba(92,58,26,.95),rgba(60,36,14,.97));border:2px solid rgba(255,214,107,.5);border-radius:16px 16px 0 0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));margin:6px -4px 0}
+#status{text-align:center;font-weight:900;font-size:15px;min-height:22px;margin-bottom:6px}
+.actrow{display:flex;gap:8px}
+.declbtn{flex:2.2;min-height:64px;border-radius:16px;font-size:20px;font-weight:900;color:#fff;background:linear-gradient(180deg,#ffb76b,var(--orange) 55%,var(--orange-d));box-shadow:0 5px 0 #8a4f16}
+.helpbtn{flex:1;min-height:64px;border-radius:16px;font-size:15px;font-weight:900;color:var(--wood-d);background:linear-gradient(180deg,#fff0b5,#e9d27a);box-shadow:0 5px 0 #9c8530;line-height:1.2}
+.declbtn:active:not(:disabled),.helpbtn:active:not(:disabled){transform:translateY(3px);box-shadow:none}
+.hostbar{display:none;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;background:#6b2420;border:1px solid var(--gold);border-radius:10px;padding:6px 8px;margin-bottom:6px;font-size:13px;font-weight:700}
+.hostbar.show{display:flex}
+.hostbar button{padding:6px 10px;border-radius:8px;font-weight:900;font-size:13px;background:var(--gold);color:var(--wood-d)}
+.hostbar button.n{background:rgba(255,255,255,.18);color:#fff}
+
+/* ---- overlays ---- */
+.overlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,20,14,.72);backdrop-filter:blur(3px)}
+.overlay.active{display:flex}
+.modal{width:100%;max-width:520px;max-height:88vh;overflow-y:auto;background:var(--cream);color:var(--ink);border-radius:18px;padding:18px 16px 16px;border:4px solid var(--wood);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.modal h2{margin:0 0 10px;color:var(--wood);font-size:20px;text-align:center}
+.modal h3{margin:12px 0 4px;font-size:15px;color:#2e7a4f}
+.modal p,.modal li{font-size:14px;line-height:1.65;margin:2px 0}
+.modal ul{padding-left:1.2em;margin:4px 0}
+.modal .subbtn{color:var(--ink);background:#efe2c6;border-color:#d8c49b}
+/* picker */
+#picker{padding:0;align-items:stretch}
+.sheet{width:100%;max-width:640px;margin:0 auto;height:100%;display:flex;flex-direction:column;background:var(--cream);color:var(--ink)}
+.sheet-head{display:flex;align-items:center;gap:8px;padding:10px 12px 6px;background:var(--wood);color:var(--cream)}
+.sheet-head h2{margin:0;font-size:17px;flex:1}
+.sheet-head button{background:rgba(255,255,255,.2);color:#fff;border-radius:999px;padding:6px 12px;font-weight:900}
+.sheet .search{padding:8px 12px 4px;background:#f3e6cc}
+.sheet .search input{width:100%;font-family:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:2px solid #d8c49b;background:#fff}
+.tabs{display:flex;gap:5px;padding:6px 12px 8px;background:#f3e6cc;overflow-x:auto}
+.tabs button{flex:none;padding:7px 11px;border-radius:999px;font-size:13px;font-weight:900;background:#fff;color:var(--ink);border:2px solid #d8c49b}
+.tabs button.on{background:var(--wood);color:#fff;border-color:var(--wood)}
+.menu-grid{flex:1;overflow-y:auto;padding:10px 12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:7px;align-content:start}
+.menu-grid button{background:none;padding:0;border-radius:10px}
+.menu-grid button.sel .ticket{outline:4px solid var(--orange);outline-offset:1px;transform:scale(1.03)}
+.sheet-foot{padding:10px 12px calc(12px + env(safe-area-inset-bottom));background:#f3e6cc;border-top:2px solid #d8c49b}
+.sheet-foot .mainbtn{margin-top:0;font-size:17px}
+.empty{grid-column:1/-1;text-align:center;opacity:.7;padding:20px}
+/* help */
+.abil{display:flex;flex-direction:column;gap:8px}
+.abil button{display:flex;align-items:center;gap:10px;text-align:left;padding:12px;border-radius:14px;background:#fff;border:2px solid #d8c49b;color:var(--ink);font-weight:800;font-size:15px}
+.abil button small{display:block;font-weight:600;font-size:12px;opacity:.8;margin-top:2px}
+.abil button .ic{font-size:28px;flex:none;width:36px;text-align:center}
+.abil button.sel{border-color:var(--orange);background:#fff1df}
+.pickrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pickrow button{padding:10px 12px;border-radius:12px;background:#fff;border:2px solid #d8c49b;font-weight:900;color:var(--ink)}
+.pickrow button.sel{border-color:var(--orange);background:#fff1df}
+.handpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px;margin-top:8px}
+.handpick button{background:none;padding:0;border-radius:10px}
+.handpick button.sel .ticket{outline:4px solid var(--berry);outline-offset:1px}
+.charlist{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
+.charlist span{width:52px;height:52px;border-radius:12px;background:#fff;border:3px solid var(--orange);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:var(--wood-d)}
+/* drama */
+#drama{background:rgba(10,20,14,.82);flex-direction:column}
+.drama{text-align:center;max-width:420px;width:100%}
+.drama .who{font-size:18px;font-weight:900;margin-bottom:10px}
+.drama .who b{color:var(--gold)}
+.drama .res{margin-top:16px;font-size:24px;font-weight:900;min-height:70px;line-height:1.35;opacity:0;transform:scale(.7);transition:all .3s cubic-bezier(.3,1.6,.5,1)}
+.drama .res.show{opacity:1;transform:none}
+.drama .res.hit{color:#9ff0c4}.drama .res.miss{color:#ffb3a8}.drama .res.self{color:#ffd66b}
+.drama .res small{display:block;font-size:14px;color:var(--cream);font-weight:700;margin-top:6px}
+.drama .ticket{margin:0 auto}
+.shake{animation:shake .5s}
+@keyframes shake{20%,60%{transform:translateX(-8px) rotate(-3deg)}40%,80%{transform:translateX(8px) rotate(3deg)}}
+/* result */
+.rtitle{text-align:center;margin:16px 0 4px}
+.rtitle .big{font-size:58px;line-height:1}
+.rtitle h1{margin:6px 0 2px;font-size:30px;color:var(--gold);text-shadow:0 3px 0 var(--wood-d)}
+.rtitle p{margin:4px 0;font-size:14px;opacity:.9}
+.stars{display:flex;justify-content:center;gap:4px;margin:8px 0;font-size:22px}
+.stars span{opacity:.25}.stars span.on{opacity:1}
+.rev-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px dashed var(--panel-b)}
+.rev-row:last-child{border-bottom:none}
+.rev-row .rn{width:6.5em;flex:none;font-weight:800;font-size:13px;padding-top:4px}
+.rev-cards{display:flex;flex-wrap:wrap;gap:4px;flex:1}
+.mt{display:inline-flex;align-items:center;gap:3px;background:var(--paper);color:var(--ink);border-radius:7px;padding:3px 7px;font-size:12px;font-weight:800;border:1.5px solid #c79a63}
+.mt.gone{opacity:.45;text-decoration:line-through}
+.confetti{position:fixed;top:-20px;width:10px;height:14px;z-index:5;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+#banner{position:fixed;top:0;left:0;right:0;z-index:90;background:var(--berry);color:#fff;text-align:center;font-weight:800;padding:8px 10px;font-size:13px;display:none}
+#banner.show{display:block}
+#toast{position:fixed;bottom:24%;left:50%;transform:translateX(-50%);background:rgba(20,10,0,.9);color:#fff;padding:10px 16px;border-radius:12px;z-index:95;display:none;max-width:88%;text-align:center;font-weight:700;font-size:14px;border:1px solid var(--gold)}
+#toast.show{display:block}
+.spin{width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.2);border-top-color:var(--gold);margin:6px auto 12px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.handoff{text-align:center;max-width:420px}
+.handoff h2{color:var(--gold)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-height:700px){#log{height:46px}.declbtn,.helpbtn{min-height:56px}}
+</style>
+</head>
+<body>
+<div id="banner"></div>
+<div id="toast"></div>
+
+<!-- ===== タイトル ===== -->
+<section id="title" class="screen active">
+  <div class="col scroll">
+    <div class="logo-wrap">
+      <div class="logo-bear">🐻</div>
+      <h1>おぼえてオーダー！</h1>
+      <div class="sub">ふーさんの森カフェ</div>
+      <p>みんなで協力！ 注文をおぼえて、手札をなくそう</p>
+    </div>
+    <div class="box">
+      <h2>あなたのニックネーム</h2>
+      <input id="nameIn" class="txt" type="text" maxlength="8" placeholder="例：たろう" autocomplete="nickname">
+    </div>
+    <div class="box" id="inviteJoinBox" style="display:none">
+      <div style="text-align:center;font-weight:800">お店 <b id="invCode" style="color:var(--gold);font-size:22px;letter-spacing:3px"></b> に招待されています</div>
+      <button class="mainbtn" id="joinInvitedBtn">部屋に入る</button>
+    </div>
+    <div class="box">
+      <h2>部屋を作る（ホスト）</h2>
+      <button class="mainbtn" id="createBtn">部屋を作る</button>
+      <button class="subbtn" id="resumeBtn" style="display:none"></button>
+      <div class="hint">ホストの端末がゲームを進行します。ゲーム中は画面を開いたままにしてください。</div>
+    </div>
+    <div class="box">
+      <h2>部屋に入る</h2>
+      <input id="codeIn" class="txt codein" type="text" maxlength="4" placeholder="コード" autocomplete="off" autocapitalize="characters">
+      <button class="mainbtn" id="joinBtn">部屋に入る</button>
+      <button class="subbtn" id="rejoinBtn" style="display:none"></button>
+    </div>
+    <button class="subbtn" id="rulesBtn1">ルールを見る</button>
+  </div>
+</section>
+
+<!-- ===== ロビー ===== -->
+<section id="lobby" class="screen">
+  <div class="col scroll">
+    <div class="logo-wrap" style="margin:10px 0 2px"><h1 style="font-size:26px">おぼえてオーダー！</h1><div class="sub">ロビー</div></div>
+    <div class="box">
+      <div class="codebig">部屋コード<b id="codeBig"></b></div>
+      <div id="qr"></div>
+      <div class="url" id="inviteUrl"></div>
+      <div class="row2"><button class="subbtn" id="copyBtn">URLをコピー</button><button class="subbtn" id="shareBtn">共有する</button></div>
+    </div>
+    <div class="box">
+      <h2>スタッフ（プレイヤー） <span id="seatCount"></span></h2>
+      <div id="seatList"></div>
+      <div class="hint" id="seatHint"></div>
+    </div>
+    <div class="box">
+      <h2>設定</h2>
+      <div class="opt"><div class="lab">スタートするレベル</div><div class="seg" id="levelSeg"></div></div>
+      <div class="opt"><div class="lab">注文の表示スピード</div><div class="seg" id="speedSeg"></div></div>
+      <div class="opt"><div class="lab">お助け</div><div class="seg" id="helpSeg"></div></div>
+      <div class="opt"><div class="lab">お助け「1枚すてる」で最後の1枚</div><div class="seg" id="discardSeg"></div></div>
+    </div>
+    <div class="box"><div class="toggle"><span>🔊 注文の読み上げ（この端末）</span><button class="switch" id="ttsSw1" aria-label="読み上げ"></button></div></div>
+    <button class="mainbtn hostonly" id="startBtn">開店！（ゲーム開始）</button>
+    <div class="waitmsg guestonly">ホストの開店を待っています<span class="dots"></span></div>
+    <button class="subbtn" id="leaveBtn1">部屋を出る</button>
+  </div>
+</section>
+
+<!-- ===== 注文をおぼえる ===== -->
+<section id="memo" class="screen">
+  <div class="col">
+    <div class="memo-head" id="memoHead"></div>
+    <div id="memoBody"></div>
+    <div class="progress"><i id="memoBar" style="width:0"></i></div>
+    <div class="memo-count" id="memoCount"></div>
+    <div class="toggle" style="width:min(80vw,320px)"><span>🔊 読み上げ</span><button class="switch" id="ttsSw2" aria-label="読み上げ"></button></div>
+  </div>
+</section>
+
+<!-- ===== プレイ ===== -->
+<section id="play" class="screen">
+  <div class="col">
+    <header class="topbar">
+      <span class="mini-logo">🐻</span>
+      <span class="chipx">部屋 <b id="codeChip"></b></span>
+      <span class="chipx">レベル <b id="lvChip"></b></span>
+      <span class="spacer"></span>
+      <button class="iconbtn" id="rulesBtn2">ルール</button>
+      <button class="iconbtn" id="menuBtn">…</button>
+    </header>
+    <div class="strip">
+      <div class="pill goal">手札0枚 <b id="zeroNum"></b></div>
+      <div class="pill">のこり <b id="activeNum"></b>人</div>
+      <div class="pill">注文 <b id="leftNum"></b>枚</div>
+    </div>
+    <div id="players"></div>
+    <div id="log"></div>
+    <div class="handwrap">
+      <h3><span>あなたの手札</span><span id="handCount"></span></h3>
+      <div class="hand" id="hand"></div>
+      <div id="peekNote"></div>
+    </div>
+    <div id="action">
+      <div class="hostbar" id="hostbar"></div>
+      <div id="status"></div>
+      <div class="actrow">
+        <button class="declbtn" id="declBtn" disabled>📣 注文を宣言する</button>
+        <button class="helpbtn" id="helpBtn" disabled>🤝 お助け</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== レベル結果 ===== -->
+<section id="result" class="screen">
+  <div class="col scroll">
+    <div class="rtitle">
+      <div class="big" id="rIcon"></div>
+      <h1 id="rTitle"></h1>
+      <div class="stars" id="rStars"></div>
+      <p id="rText"></p>
+    </div>
+    <div class="box">
+      <h2>答え合わせ（このレベルの注文）</h2>
+      <div id="revealBox"></div>
+      <div class="hint">線が引かれた注文は、宣言で当てた（またはお助けで捨てた）ものです。</div>
+    </div>
+    <div class="hostonly" id="hostResultBtns"></div>
+    <div class="waitmsg guestonly" id="resultWait"></div>
+    <button class="subbtn" id="leaveBtn2">部屋を出る</button>
+  </div>
+</section>
+
+<!-- ===== オーバーレイ ===== -->
+<div class="overlay" id="picker">
+  <div class="sheet">
+    <div class="sheet-head"><h2>📣 どの注文を宣言する？</h2><button id="pickClose">とじる</button></div>
+    <div class="search"><input id="pickSearch" type="search" placeholder="🔍 メニューを検索（例：アイス、パフェ）" autocomplete="off"></div>
+    <div class="tabs" id="pickTabs"></div>
+    <div class="menu-grid" id="pickGrid"></div>
+    <div class="sheet-foot"><button class="mainbtn" id="pickOk" disabled>注文を選んでください</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="helpModal">
+  <div class="modal">
+    <h2>🤝 お助けを使う</h2>
+    <p style="text-align:center;font-size:13px">使っても宣言の番はそのまま続きます。</p>
+    <div class="abil" id="abilList">
+      <button data-k="first"><span class="ic">🔍</span><span>最初の文字をのぞく<small>だれか1人の手札すべての「最初の1文字」を見る</small></span></button>
+      <button data-k="last"><span class="ic">🔎</span><span>最後の文字をのぞく<small>だれか1人の手札すべての「最後の1文字」を見る</small></span></button>
+      <button data-k="discard"><span class="ic">🗑️</span><span>手札を1枚すてる<small>自分の手札から1枚えらんで捨てる</small></span></button>
+    </div>
+    <div id="helpStep2"></div>
+    <button class="mainbtn" id="helpOk" disabled>使う</button>
+    <button class="subbtn" id="helpCancel">やめる</button>
+  </div>
+</div>
+
+<div class="overlay" id="peekModal">
+  <div class="modal" style="text-align:center">
+    <h2 id="peekTitle"></h2>
+    <div class="charlist" id="peekChars"></div>
+    <p style="font-size:12.5px">※ この情報はあなたにだけ表示されています（順番は五十音順）。</p>
+    <button class="mainbtn" id="peekOk">おぼえた！</button>
+  </div>
+</div>
+
+<div class="overlay" id="drama">
+  <div class="drama">
+    <div class="who" id="dWho"></div>
+    <div id="dCard"></div>
+    <div class="res" id="dRes"></div>
+  </div>
+</div>
+
+<div class="overlay" id="rulesModal">
+  <div class="modal">
+    <h2>🐻 おぼえてオーダー！のルール</h2>
+    <p>ここは、くまの「ふーさん」がひらく森のカフェ。お客さんの注文を<b>みんなで協力して</b>さばきましょう！</p>
+    <h3>① 注文をおぼえる</h3>
+    <ul>
+      <li>レベルごとに「レベル × 人数」個の注文が、全員の画面に1つずつ表示されます。</li>
+      <li>メモは禁止！ 一度流れた注文は、あとから見直せません。</li>
+    </ul>
+    <h3>② 手札を配る</h3>
+    <ul><li>おぼえた注文がシャッフルされ、全員に同じ枚数ずつ配られます。自分の手札は自分にしか見えません。</li></ul>
+    <h3>③ 順番に宣言する</h3>
+    <ul>
+      <li>自分の番に、メニュー全体から注文を1つ選んで宣言します。</li>
+      <li><b>自分以外のだれか</b>がそのカードを持っていたら成功！ そのカードは手札から消えます。</li>
+      <li>だれも持っていなかったら失敗。<b>自分だけが持っていた場合も失敗</b>です。失敗した人はそのレベルでは「脱落」して宣言できなくなります（手札は残り、ほかの人に当ててもらうことはできます）。</li>
+    </ul>
+    <h3>④ クリア条件</h3>
+    <ul>
+      <li>手札が0枚の人が、2人なら1人、3〜4人なら2人、5〜6人なら3人になったらレベルクリア！</li>
+      <li>全員が脱落したらレベル失敗。レベル7をクリアすれば大成功です。</li>
+    </ul>
+    <h3>🤝 お助け</h3>
+    <ul>
+      <li>1人1回（設定で「レベルごと」か「ゲーム中」）。自分の番に使えて、使っても宣言の番は続きます。</li>
+      <li>「最初の文字をのぞく」「最後の文字をのぞく」：だれか1人の手札すべての最初／最後の文字を、自分だけが見られます。</li>
+      <li>「手札を1枚すてる」：自分の手札を1枚捨てます（標準では最後の1枚は捨てられません）。</li>
+      <li>脱落した人はお助けを使えません。</li>
+    </ul>
+    <button class="mainbtn" id="rulesClose">とじる</button>
+  </div>
+</div>
+
+<div class="overlay" id="confirmModal">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <h2 id="cfTitle"></h2>
+    <p id="cfText"></p>
+    <button class="mainbtn" id="cfYes"></button>
+    <button class="subbtn" id="cfNo">キャンセル</button>
+  </div>
+</div>
+
+<div class="overlay" id="connecting">
+  <div class="handoff">
+    <div class="spin"></div>
+    <h2 id="connTitle" style="font-size:22px">接続中…</h2>
+    <p id="connText"></p>
+    <button class="subbtn" id="connCancel" style="max-width:240px;margin:14px auto 0">キャンセル</button>
+  </div>
+</div>
+
+<script src="vendor/peerjs.min.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script src="logic.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
