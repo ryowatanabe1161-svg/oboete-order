@@ -225,11 +225,17 @@ input.txt:focus{outline:none;border-color:var(--orange)}
 .handoff h2{color:var(--gold)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-height:700px){#log{height:46px}.declbtn,.helpbtn{min-height:56px}}
+#lobbyReqBar{position:fixed;left:50%;top:calc(52px + env(safe-area-inset-top));transform:translateX(-50%);z-index:85;width:min(520px,calc(100% - 20px));display:none;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;
+  background:#eef0ff;color:#2a2a4a;border:2px solid #8f99ff;border-radius:14px;padding:7px 9px;font-size:13px;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+#lobbyReqBar.show{display:flex}
+#lobbyReqBar button{padding:6px 11px;border-radius:10px;font-weight:900;font-size:13px;background:#5b67f0;color:#fff;border:none}
+#lobbyReqBar button.ghost{background:#fff;color:#555;border:2px solid #ccd}
+#menuModal .mainbtn{font-size:17px}
 </style>
 </head>
 <body>
 <div id="banner"></div>
-<div id="toast"></div>
+<div id="toast"></div><div id="lobbyReqBar" role="status"></div>
 
 <!-- ===== タイトル ===== -->
 <section id="title" class="screen active">
@@ -296,6 +302,7 @@ input.txt:focus{outline:none;border-color:var(--orange)}
 <!-- ===== 注文をおぼえる ===== -->
 <section id="memo" class="screen">
   <div class="col">
+    <button class="iconbtn" id="menuBtnM" style="position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:3" aria-label="メニュー">…</button>
     <div class="memo-head" id="memoHead"></div>
     <div id="memoBody"></div>
     <div class="progress"><i id="memoBar" style="width:0"></i></div>
@@ -431,6 +438,19 @@ input.txt:focus{outline:none;border-color:var(--orange)}
       <li>脱落した人はお助けを使えません。</li>
     </ul>
     <button class="mainbtn" id="rulesClose">とじる</button>
+  </div>
+</div>
+
+<div class="overlay" id="menuModal">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <h2>メニュー</h2>
+    <button class="mainbtn hostonly" id="menuAbort">⏸️ 中断してロビーに戻る</button>
+    <div class="hint hostonly" style="margin-top:6px">部屋コード・参加者・設定はそのままで、全員がロビーに戻ります。</div>
+    <button class="mainbtn guestonly" id="menuReq">🙋 ロビーに戻りたい（ホストに伝える）</button>
+    <div class="hint guestonly" style="margin-top:6px">ゲームを中断できるのはホストだけです。</div>
+    <button class="subbtn" id="menuRules" >📖 ルールを見る</button>
+    <button class="subbtn" id="menuLeave" ><span class="hostonly">部屋を閉じる</span><span class="guestonly">退出する</span></button>
+    <button class="subbtn" id="menuClose" >とじる</button>
   </div>
 </div>
 
