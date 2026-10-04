@@ -267,6 +267,12 @@
     } catch (e) { if (conn) conn.send({ t: 'error', msg: e.message }); else toast(e.message); }
   }
 
+  function hitsOf(L) {
+    return L.history.filter(function (e) { return e.type === 'declare' && e.result === 'hit'; }).map(function (e) {
+      var b = seatBySid(e.by), h = seatBySid(e.holder);
+      return { item: e.item, by: e.by, holder: e.holder, byName: b ? b.name : '?', holderName: h ? h.name : '?' };
+    });
+  }
   // ---- ビュー（見せてよい情報だけ） ----
   function viewFor(sid) {
     var R = host.room, L = R.L;
@@ -287,6 +293,7 @@
     v.hand = (L.hands[sid] || []).slice();          // 自分の手札だけ
     v.canDiscard = L.hands[sid] ? O.canDiscard(L, sid) : false;
     v.myHelp = R.priv[sid] || null;                  // お助けの結果は本人だけ
+    v.hits = hitsOf(L);                              // 当てたオーダー（宣言で公開済みの情報だけ。失敗・お助けで捨てた札は入れない）
     if (R.phase === 'clear' || R.phase === 'fail' || R.phase === 'victory') {
       v.reveal = { dealt: L.dealt, hands: L.hands };  // レベル終了後の答え合わせ
     }
@@ -533,8 +540,8 @@
     lastView = v; window.__om.view = v;
     abortUi(v);
     if (lastEvId === null) lastEvId = v.ev ? v.ev.id : 0; // 参加直後に過去の演出を再生しない
-    if (v.phase === 'lobby') { show('lobby'); renderLobby(v); }
-    else if (v.phase === 'memorize') { overlay('picker', false); overlay('helpModal', false); show('memo'); renderMemo(v); }
+    if (v.phase === 'lobby') { show('lobby'); renderLobby(v); overlay('hitsModal', false); }
+    else if (v.phase === 'memorize') { overlay('picker', false); overlay('helpModal', false); overlay('hitsModal', false); show('memo'); renderMemo(v); }
     else if (v.phase === 'play') { show('play'); renderPlay(v); }
     else { renderPlay(v); show('result'); renderResult(v); }
     if (v.ev && v.ev.id !== lastEvId) { lastEvId = v.ev.id; drama(v, v.ev); }
@@ -602,6 +609,7 @@
         '<span class="helpico' + (s.helpLeft ? '' : ' used') + '">🤝</span><span class="backs">' + backs + '<span class="num">' + s.hand + '</span></span></div>';
     }).join('');
     $('log').innerHTML = (v.log || []).slice(0, 4).map(function (l) { return '<div>' + esc(l) + '</div>'; }).join('');
+    renderHits(v);
     $('handCount').textContent = v.hand.length + '枚';
     $('hand').innerHTML = v.hand.length ? v.hand.map(function (id) { return ticket(id, 'sm'); }).join('') : '<div class="empty" style="color:var(--cream)">🎉 手札はありません！</div>';
     var h = v.myHelp;
@@ -625,6 +633,42 @@
       hb.classList.add('show');
     } else hb.classList.remove('show');
   }
+  // ---- 当てたオーダー（全員で共有・レベル中いつでも見られる） ----
+  var hitsSeen = { key: '', n: 0 };
+  function hitChip(h, isNew) {
+    var m = O.item(h.item);
+    return '<div class="hc c-' + m.c + (isNew ? ' new' : '') + '" data-item="' + h.item + '"><span class="e">' + m.e + '</span><span class="t"><b>' + esc(m.n) + '</b><small>📣' + esc(h.byName) + '・🃏' + esc(h.holderName) + '</small></span></div>';
+  }
+  function hitRows(v) {
+    var hits = v.hits || [];
+    if (!hits.length) return '<div class="hl-empty">まだありません。宣言で当てた注文がここに順番に並びます。</div>';
+    return hits.map(function (h, i) {
+      var m = O.item(h.item);
+      return '<div class="hl c-' + m.c + '" data-item="' + h.item + '"><span class="no">' + (i + 1) + '</span><span class="e">' + m.e + '</span><span class="t"><b>' + esc(m.n) + '</b><small>📣 ' + esc(h.byName) + 'が宣言　🃏 ' + esc(h.holderName) + 'の手札から</small></span></div>';
+    }).join('');
+  }
+  function renderHits(v) {
+    var hits = v.hits || [], key = v.lid + '', total = v.total || 0;
+    if (hitsSeen.key !== key) hitsSeen = { key: key, n: hits.length };
+    var fresh = hits.length > hitsSeen.n;
+    $('hitsCount').textContent = '当てた ' + hits.length + ' / 全' + total;
+    var html = hits.length ? hits.map(function (h, i) { return hitChip(h, fresh && i === hits.length - 1); }).join('') : '<span class="hb-empty">宣言で当てた注文がここに並びます</span>';
+    var row = $('hitsRow');
+    if (row._html !== html) { row._html = html; row.innerHTML = html; if (fresh || hits.length) row.scrollLeft = row.scrollWidth; }
+    hitsSeen.n = hits.length;
+    if ($('hitsModal').classList.contains('active')) fillHitsModal(v);
+  }
+  function fillHitsModal(v) {
+    $('hitsModalCount').textContent = '当てた ' + (v.hits || []).length + ' / 全' + (v.total || 0);
+    var html = hitRows(v);
+    if ($('hitsList')._html !== html) { $('hitsList')._html = html; $('hitsList').innerHTML = html; }
+  }
+  function openHits() { if (!lastView) return; fillHitsModal(lastView); overlay('hitsModal', true); }
+  $('hitsBar').addEventListener('click', openHits);
+  $('hitsBar').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openHits(); } });
+  $('hitsClose').onclick = function () { overlay('hitsModal', false); };
+  $('hitsModal').addEventListener('click', function (e) { if (e.target === this) overlay('hitsModal', false); });
+
   var dramaT;
   function drama(v, ev) {
     var by = (v.seats.filter(function (s) { return s.sid === ev.by; })[0] || {}).name || '?';
@@ -661,6 +705,8 @@
       : 'レベル7の注文をさばききりました！ ふーさんの森カフェは大繁盛🐻✨';
     var st = ''; for (var i = 1; i <= 7; i++) st += '<span class="' + (i < v.level || (i === v.level && v.phase !== 'fail') ? 'on' : '') + '">⭐</span>';
     $('rStars').innerHTML = st;
+    $('rHitsCount').textContent = '当てた ' + (v.hits || []).length + ' / 全' + (v.total || 0);
+    $('rHits').innerHTML = hitRows(v);
     var R = v.reveal || { dealt: {}, hands: {} };
     $('revealBox').innerHTML = v.seats.map(function (s) {
       var dealt = R.dealt[s.sid] || [], left = R.hands[s.sid] || [];
